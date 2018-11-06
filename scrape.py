@@ -119,9 +119,9 @@ def find_poem(poemURL):
             lines = find_poem_lines(poemSoup)
             translator = find_span_beginning_remove(poemSoup,
                                                     'c-txt_attribution',
-                                                    'translated by ')
+                                                    'translated by')
             source = find_span_beginning_remove(poemSoup, 'c-txt_note',
-                                                'source: ')
+                                                'source:')
             year = None
             if source:
                 year = find_poem_year(source)
@@ -202,7 +202,10 @@ def find_span_beginning_remove(soup, span_class, pattern):
     """
     result = find_span_element(soup, span_class, pattern)
     if result:
-        return result[len(pattern):]
+        result = result[len(pattern):]
+        result = result.lstrip(WHITESPACE)
+        result = result.rstrip(WHITESPACE)
+        return result
     return None
 
 def find_span_element(soup, span_class, pattern):
@@ -213,7 +216,7 @@ def find_span_element(soup, span_class, pattern):
     spans = soup.find_all('span', {'class': span_class})
     for span in spans:
         text = unescape_text(span.text, left=True, right=True)
-        if re.search(pattern, text, re.I):
+        if re.search(pattern, text, re.I | re.U):
             return text
     return None
 
@@ -268,7 +271,7 @@ def create_poet(poet_name, years, cursor):
         if years:
             born = years[0]
             died = None
-            if 1 in years:
+            if len(years) > 1:
                 died = years[1]
                 cursor.execute(INSERT_POET_DEAD, (poet_name, born, died))
             else:
@@ -294,15 +297,15 @@ def create_poem(poem, poet_id, cursor):
     if poem.source:
         query_names = query_names + ", source"
         query_values = query_values + ", ?"
-        params = params + (poem.url,)
+        params = params + (poem.source,)
     if poem.year:
         query_names = query_names + ", year"
         query_values = query_values + ", ?"
-        params = params + (poem.url,)
+        params = params + (poem.year,)
     if poem.translator:
         query_names = query_names + ", translator"
         query_values = query_values + ", ?"
-        params = params + (poem.url,)
+        params = params + (poem.translator,)
 
     query = INSERT_POEM % (query_names, query_values)
     cursor.execute(query, params)
